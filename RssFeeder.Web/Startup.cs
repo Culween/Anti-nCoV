@@ -39,7 +39,9 @@ namespace RssFeeder.Web
             services.AddSingleton<INCoVDatabaseSettings>(sp =>
                 sp.GetRequiredService<IOptions<NCoVDatabaseSettings>>().Value);
 
-            services.AddSingleton<RssDataService>();
+            services.AddSingleton<NewsService>();
+            services.AddSingleton<WeiboUserService>();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

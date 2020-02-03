@@ -9,13 +9,13 @@ namespace RssFeeder.FeedCore
     public class RssParser
     {
 
-        public static IList<RssData> Parse(string url)
+        public static IList<News> Parse(string url)
         {
             try
             {
                 XDocument feed = XDocument.Load(url);
                 var entries = from item in feed.Root.Descendants().First(i => i.Name.LocalName == "channel").Elements().Where(i => i.Name.LocalName == "item")
-                              select new RssData
+                              select new News
                               {
                                   Title = item.Elements().First(i => i.Name.LocalName == "title").Value,
                                   Content = item.Elements().First(i => i.Name.LocalName == "description").Value,
@@ -26,7 +26,7 @@ namespace RssFeeder.FeedCore
             }
             catch
             {
-                return new List<RssData>();
+                return new List<News>();
             }
         }
     }

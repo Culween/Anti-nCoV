@@ -19,44 +19,98 @@ namespace RssFeeder.Web.Controllers
             "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
         };
 
-        static List<RssFeed> RssFeeds = new List<RssFeed>
-        {
-            new RssFeed(){
-                Url="https://rssfeed.today/weibo/rss/1770713970",
-                Name="长沙市疾控中心",
-                Province="湖南省",
-                City="长沙"
-            }
-        };
+        static List<WeiboUser> RssFeeds = new List<WeiboUser> { };
+        static Queue<WeiboUser> RssFeedsQueue = new Queue<WeiboUser>();
 
         private readonly ILogger<WeatherForecastController> _logger;
 
-        private readonly RssDataService _rssDataService;
+        private readonly NewsService _rssDataService;
+        private readonly WeiboUserService _weiboUserService;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger, RssDataService rssDataService)
+        public WeatherForecastController(ILogger<WeatherForecastController> logger, NewsService rssDataService, WeiboUserService weiboUserService)
         {
             _logger = logger;
             _rssDataService = rssDataService;
+            _weiboUserService = weiboUserService;
+
+            RssFeeds = _weiboUserService.Get();
 
             foreach (var feed in RssFeeds)
             {
-                IList<RssData> rssDatas = RssParser.Parse(feed.Url);
-                foreach (var data in rssDatas)
-                {
-                    if (_rssDataService.GetByTitle(data.Title) != null)
-                    {
-                        continue;
-                    }
-                    data.City = feed.City;
-                    data.Province = feed.Province;
-                    data.RssFeedName = feed.Name;
-                    _rssDataService.Create(data);
-                }
+                RssFeedsQueue.Enqueue(feed);
+
             }
+
+            Parallel.For(0, 9, i =>
+             {
+                 int count = 0;
+                 while (GetRssNews(i))
+                 {
+                     count++;
+                     Console.WriteLine($"Thread[{i}] get rss times: {count}");
+                     _logger.LogInformation($"Thread[{i}] get rss times: {count}");
+                 }
+             });
         }
 
+        bool GetRssNews(int id)
+        {
+            WeiboUser user = null;
+            try
+            {
+                if (RssFeedsQueue.Count == 0)
+                    return false;
+
+                user = RssFeedsQueue.Dequeue();
+                if (user == null)
+                {
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Thread[{id}] error.", ex);
+                return false;
+            }
+
+            try
+            {
+                IList<News> newsDatas = RssParser.Parse(user.RssUrl);
+                foreach (var news in newsDatas)
+                {
+                    try
+                    {
+                        if (_rssDataService.GetByTitle(news.Title) != null)
+                        {
+                            continue;
+                        }
+
+                        news.City = user.City;
+                        news.Country = user.Country;
+                        news.Province = user.Province;
+                        news.Publisher = user.Name;
+                        news.Source = "微博";
+                        news.Status = NewsStatus.Unconfirmed;
+                        _rssDataService.Create(news);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError($"Thread[{id}] mongo error.", ex);
+                        continue;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Thread[{id}] rss error.", ex);
+            }
+
+            return true;
+        }
+
+
         [HttpGet]
-        public IEnumerable<RssData> Get()
+        public IEnumerable<News> Get()
         {
             //var rng = new Random();
 
@@ -68,7 +122,7 @@ namespace RssFeeder.Web.Controllers
             //})
             //.ToArray();
 
-            List<RssData> rssDatas = _rssDataService.Get();
+            List<News> rssDatas = _rssDataService.Get();
             return rssDatas;
         }
     }

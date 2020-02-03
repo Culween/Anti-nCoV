@@ -6,7 +6,7 @@ using System.Text;
 
 namespace RssFeeder.Storage.Services
 {
-    public class RssFeedService : BaseService<RssFeed>
+    public class RssFeedService : BaseService<WeiboUser>
     {
         public RssFeedService(INCoVDatabaseSettings settings) : base(settings, "RssFeed")
         {
@@ -16,7 +16,7 @@ namespace RssFeeder.Storage.Services
         {
         }
 
-        public RssFeed GetByName(string name) =>
-            _collection.Find<RssFeed>(rssFeed => rssFeed.Name == name).FirstOrDefault();
+        public WeiboUser GetByName(string name) =>
+            _collection.Find<WeiboUser>(rssFeed => rssFeed.Name == name).FirstOrDefault();
     }
 }
