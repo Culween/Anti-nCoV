@@ -80,7 +80,7 @@ namespace RssFeeder.Web.Controllers
                 {
                     try
                     {
-                        if (_rssDataService.GetByTitle(news.Title) != null)
+                        if (_rssDataService.GetByLink(news.Link) != null)
                         {
                             continue;
                         }

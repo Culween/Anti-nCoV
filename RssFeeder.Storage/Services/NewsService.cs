@@ -18,5 +18,9 @@ namespace RssFeeder.Storage.Services
 
         public News GetByTitle(string title) =>
             _collection.Find<News>(rssData => rssData.Title == title).FirstOrDefault();
+
+
+        public News GetByLink(string link) =>
+           _collection.Find<News>(rssData => rssData.Link == link).FirstOrDefault();
     }
 }
